@@ -36,4 +36,6 @@ const vector<tuple<string, string, bool>> commands = {
         make_tuple(string(COLOR_RESET) + "version", string(COLOR_WARNING) + "Display the current version of the dbxcli utility.", false),
         make_tuple(string(COLOR_RESET) + "search", string(COLOR_WARNING) + "Search option.", false),
         make_tuple(string(COLOR_RESET) + "team", string(COLOR_WARNING) + "Team management commands.", true),
+        make_tuple(string(COLOR_RESET) + "help", string(COLOR_WARNING) + "Check help.", true),
+        make_tuple(string(COLOR_RESET) + "exit", string(COLOR_WARNING) + "Exit the shell.", true),
 };
