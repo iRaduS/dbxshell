@@ -20,6 +20,7 @@ void checkAuthenticationOnShellStart() {
 }
 
 void forkNewProcessForDbxcliUtiity(vector<string> args) {
+    int pipefd[2]; char str[512];
     const char **argv = new const char*[args.size() + 2];
 
     argv[0] = dbxcliPath.c_str();
@@ -28,12 +29,31 @@ void forkNewProcessForDbxcliUtiity(vector<string> args) {
     }
     argv[args.size() + 1] = NULL;
 
-    pid_t processId = fork();
-    if (processId == 0) {
-        execv(dbxcliPath.c_str(), (char**)argv);
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
     }
 
-    waitpid(processId, NULL, 0);
+    pid_t processId = fork();
+    if (processId == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+
+    if (processId == 0) {
+        dup2(pipefd[1], STDERR_FILENO);
+
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execv(dbxcliPath.c_str(), (char**)argv);
+    } else {
+        close(pipefd[1]);
+
+        int nbytes = read(pipefd[0], str, sizeof(str));
+        printf("%s %s%.*s", globalPrefix.c_str(), COLOR_DANGER, nbytes, str);
+
+        wait(NULL);
+    }
 }
 
 void toLower(string& cmd) {
@@ -66,15 +86,17 @@ int main() {
     vector<string> fullArgs;
     for (string cmd; ;) {
         cout << globalPrefix << " $ "; getline(cin, cmd);
-        if (!cmd.size()) continue;
+        if (!cmd.size()) {
+            continue;
+        }
 
         fullArgs = parseArgs(cmd); toLower(fullArgs[0]);
-
-        auto it = find_if(commands.begin(), commands.end(), [fullArgs](auto command) {
+        auto it = find_if(commands.begin(), commands.end(), [fullArgs](auto command) -> bool {
             return string(COLOR_RESET) + fullArgs[0] == get<0>(command);
         });
         if (it == commands.end()) {
-            cout << COLOR_DANGER << "Command doesn't exists, please use help!\n";
+            cout << globalPrefix << COLOR_DANGER << " Command doesn't exists, please use help!\n";
+            continue;
         }
 
         if (string(COLOR_RESET) + fullArgs[0] == get<0>(*it) && !get<2>(*it)) {
@@ -85,6 +107,20 @@ int main() {
             for (auto command : commands) {
                 cout << get<0>(command) << "\t" << get<1>(command) << "\n";
             }
+        }
+
+        if (fullArgs[0] == "team") {
+            toLower(fullArgs[1]);
+
+            auto tit = find_if(teamParameters.begin(), teamParameters.end(), [fullArgs](auto teamParameter) -> bool {
+                return fullArgs[1] == teamParameter;
+            });
+            if (tit == teamParameters.end()) {
+                cout << globalPrefix << COLOR_DANGER << " Parameters available: add-member, info, list-groups, list-members, remove-member.\n";
+                continue;
+            }
+
+            forkNewProcessForDbxcliUtiity(fullArgs);
         }
 
         if (fullArgs[0] == "exit") {

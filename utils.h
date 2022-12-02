@@ -39,3 +39,10 @@ const vector<tuple<string, string, bool>> commands = {
         make_tuple(string(COLOR_RESET) + "help", string(COLOR_WARNING) + "Check help.", true),
         make_tuple(string(COLOR_RESET) + "exit", string(COLOR_WARNING) + "Exit the shell.", true),
 };
+const vector<string> teamParameters = {
+        "add-member",
+        "info",
+        "list-groups",
+        "list-members",
+        "remove-member"
+};
