@@ -45,12 +45,14 @@ void forkNewProcessForDbxcliUtiity(vector<string> args) {
 
         close(pipefd[0]);
         close(pipefd[1]);
+
         execv(dbxcliPath.c_str(), (char**)argv);
     } else {
         close(pipefd[1]);
 
+        puts(globalPrefix.c_str());
         int nbytes = read(pipefd[0], str, sizeof(str));
-        printf("%s %s%.*s", globalPrefix.c_str(), COLOR_DANGER, nbytes, str);
+        printf("%s%.*s\n", COLOR_DANGER, nbytes, str);
 
         wait(NULL);
     }
